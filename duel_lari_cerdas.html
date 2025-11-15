@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duel Lari Cerdas PJOK</title>
+    <!-- Memuat Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat font Inter --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* CSS Kustom untuk Papan Permainan */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* green-50 */
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
+                              url('https://www.transparenttextures.com/patterns/grass.png');
+            overflow: hidden; /* Mencegah scrolling */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: row; /* Diubah dari 'column' menjadi 'row' */
+            gap: 2rem; /* Jarak antar pemain */
+            width: 100%;
+            max-width: 1400px; /* Batasi lebar container */
+            height: calc(100vh - 2rem); /* Sesuaikan tinggi dengan padding body */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .player-area {
+            background-color: white;
+            border-radius: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 50%; /* Diubah dari 100% menjadi 50% */
+            height: 100%; /* Diubah dari 50% menjadi 100% */
+            box-sizing: border-box;
+            border: 4px solid;
+            position: relative;
+        }
+
+        #player1-area { border-color: #fca5a5; /* red-300 */ }
+        #player2-area { border-color: #93c5fd; /* blue-300 */ }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .player-name {
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+        #player1-name { color: #dc2626; /* red-600 */ }
+        #player2-name { color: #2563eb; /* blue-600 */ }
+
+        .pawn {
+            width: 80px; /* Pion lebih kecil agar muat di lintasan */
+            height: 80px;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%) translateX(10px); 
+            transition: transform 0.8s cubic-bezier(0.45, 0.05, 0.55, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem; /* Emoji lebih kecil */
+            border: 4px solid rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        #pawn1 { background-color: #f87171; color: white; } /* red-400 */
+        #pawn2 { background-color: #60a5fa; color: white; } /* blue-400 */
+
+        .track {
+            background: linear-gradient(to right, #fef3c7, #fee2e2); /* warm gradient */
+            border: 4px solid #f9a8d4; /* pink border */
+            height: 100px; /* Tinggi lintasan */
+            border-radius: 50px;
+            position: relative;
+            width: calc(100% - 20px); /* Lebar track, disesuaikan dengan padding pion */
+            margin: 0 10px; /* Untuk memberikan sedikit ruang */
+        }
+        
+        .finish-line {
+            position: absolute;
+            right: 20px; /* Posisi garis finish */
+            top: 0;
+            bottom: 0;
+            width: 12px;
+            background: repeating-linear-gradient(
+                45deg,
+                #333,
+                #333 10px,
+                #fff 10px,
+                #fff 20px
+            );
+            border-left: 3px solid #000;
+            border-right: 3px solid #000;
+        }
+
+        .quiz-section {
+            background-color: #f3f4f6; /* gray-100 */
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            flex-grow: 1; /* Agar mengambil ruang sisa */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .question-text {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #374151; /* gray-700 */
+            margin-bottom: 1.5rem;
+        }
+
+        .option-button {
+            transition: all 0.2s ease-in-out;
+            transform: scale(1);
+            background-color: #e0f2fe; /* light blue */
+            border: 3px solid #a7d9f7; /* darker blue border */
+            color: #0d6efd; /* bootstrap blue */
+            font-weight: 600;
+            font-size: 1.7rem;
+            padding: 1.2rem 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            text-align: left;
+        }
+        .option-button:hover {
+            background-color: #d0edff;
+        }
+        .option-button:active {
+            transform: scale(0.98);
+            filter: brightness(0.95);
+        }
+        .option-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .option-button.correct {
+            background-color: #d1fae5; /* green-100 */
+            border-color: #34d399; /* green-400 */
+            color: #059669; /* green-700 */
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* red-100 */
+            border-color: #ef4444; /* red-500 */
+            color: #dc2626; /* red-600 */
+        }
+        
+        /* Overlay untuk Start dan Winner */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.75);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.3s ease;
+        }
+        .overlay-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .overlay-content {
+            background-color: white;
+            padding: 3rem 4rem;
+            border-radius: 2rem;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            transform: scale(1);
+            transition: transform 0.3s ease;
+        }
+        .overlay-hidden .overlay-content {
+            transform: scale(0.9);
+        }
+
+        .start-button, .restart-button {
+            font-size: 3rem;
+            font-weight: 700;
+            padding: 1.5rem 3rem;
+            border-radius: 1.5rem;
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+        .start-button:hover, .restart-button:hover {
+            background-color: #2563eb; /* blue-600 */
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .start-button:active, .restart-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .player-name {
+                font-size: 2rem;
+            }
+            .question-text {
+                font-size: 1.5rem;
+            }
+            .option-button {
+                font-size: 1.4rem;
+                padding: 1rem 1.2rem;
+            }
+            .pawn {
+                width: 60px;
+                height: 60px;
+                font-size: 2.5rem;
+            }
+            .track {
+                height: 80px;
+            }
+            .start-button, .restart-button {
+                font-size: 2.5rem;
+                padding: 1rem 2rem;
+            }
+        }
+        @media (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+                height: auto;
+                padding: 0.5rem;
+            }
+            .player-area {
+                height: auto;
+                padding: 1rem;
+                gap: 1rem;
+            }
+            .player-name {
+                font-size: 1.8rem;
+            }
+            .question-text {
+                font-size: 1.2rem;
+                margin-bottom: 1rem;
+            }
+            .option-button {
+                font-size: 1.1rem;
+                padding: 0.8rem 1rem;
+            }
+            .pawn {
+                width: 50px;
+                height: 50px;
+                font-size: 2rem;
+            }
+            .track {
+                height: 70px;
+            }
+            .start-button, .restart-button {
+                font-size: 2rem;
+                padding: 0.8rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+
+        <!-- Player 1 Area (TIM MERAH) --><div id="player1-area" class="player-area">
+            <div class="player-info">
+                <span id="player1-name" class="player-name">Tim Merah 🏃‍♂️</span>
+                <span id="player1-score" class="text-3xl font-bold text-gray-700"></span>
+            </div>
+            <div id="track1" class="track">
+                <div class="finish-line"></div>
+                <div id="pawn1" class="pawn">🏃‍♂️</div>
+            </div>
+            <div class="quiz-section">
+                <p id="question1" class="question-text"></p>
+                <div id="options1" class="grid grid-cols-1 gap-3 md:gap-4">
+                    <!-- Options for Player 1 --></div>
+            </div>
+        </div>
+
+        <!-- Player 2 Area (TIM BIRU) --><div id="player2-area" class="player-area">
+            <div class="player-info">
+                <span id="player2-name" class="player-name">Tim Biru 🏃‍♀️</span>
+                <span id="player2-score" class="text-3xl font-bold text-gray-700"></span>
+            </div>
+            <div id="track2" class="track">
+                <div class="finish-line"></div>
+                <div id="pawn2" class="pawn">🏃‍♀️</div>
+            </div>
+            <div class="quiz-section">
+                <p id="question2" class="question-text"></p>
+                <div id="options2" class="grid grid-cols-1 gap-3 md:gap-4">
+                    <!-- Options for Player 2 --></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Start Overlay --><div id="start-overlay" class="overlay">
+        <div class="overlay-content">
+            <h1 class="text-5xl md:text-6xl font-black text-blue-700 mb-8">Duel Lari Cerdas PJOK</h1>
+            <p class="text-2xl md:text-3xl text-gray-700 mb-12">Siap untuk adu kecepatan dan pengetahuan olahraga?</p>
+            <button id="start-button" class="start-button">Mulai Permainan!</button>
+        </div>
+    </div>
+
+    <!-- Winner Overlay --><div id="winner-overlay" class="overlay overlay-hidden">
+        <div class="overlay-content bg-gradient-to-br from-yellow-300 to-orange-400 text-white">
+            <div class="text-9xl mb-4">🏆</div>
+            <h2 id="winner-text" class="text-6xl md:text-7xl font-black mb-12" style="text-shadow: 3px 3px 0px rgba(0,0,0,0.2);">
+                <!-- Winner text will be inserted here --></h2>
+            <button id="restart-button" class="restart-button bg-white text-blue-600 hover:bg-gray-100">Main Lagi</button>
+        </div>
+    </div>
+
+    <script>
+        // --- BANK SOAL PJOK KELAS 4 (Diperbanyak dan Kontekstual) ---
+        const BANK_SOAL_PJOK = [
+            {
+                pertanyaan: "Agar tubuh tidak cedera sebelum olahraga, kita harus melakukan...",
+                pilihan: ["Pemanasan", "Pendinginan", "Tidur"],
+                jawaban: 0
+            },
+            {
+                pertanyaan: "Setelah berolahraga, otot terasa lelah. Gerakan apa yang baik dilakukan?",
+                pilihan: ["Berlari cepat", "Pendinginan", "Duduk diam"],
+                jawaban: 1
+            },
+            {
+                pertanyaan: "Olahraga yang melatih kekuatan otot kaki adalah...",
+                pilihan: ["Push up", "Lari sprint", "Mengangkat beban"],
+                jawakan: 1
+            },
+            {
+                pertanyaan: "Ketika bermain sepak bola, bagian kaki mana yang sering digunakan untuk menendang bola jarak jauh?",
+                pilihan: ["Punggung kaki", "Kaki bagian dalam", "Tumit"],
+                jawaban: 0
+            },
+            {
+                pertanyaan: "Mengoper bola kepada teman dalam permainan bola basket disebut...",
+                pilihan: ["Shooting", "Dribbling", "Passing"],
+                jawaban: 2
+            },
+            {
+                pertanyaan: "Gerakan melompat dan mendarat dengan kedua kaki bersamaan disebut...",
+                pilihan: ["Lari", "Lompat", "Tolakan"],
+                jawaban: 1
+            },
+            {
+                pertanyaan: "Posisi tubuh yang benar saat melakukan sit up adalah...",
+                pilihan: ["Tengkurap", "Berdiri tegak", "Telentang"],
+                jawaban: 2
+            },
+            {
+                pertanyaan: "Bagian tubuh yang berperan penting dalam menjaga keseimbangan saat berdiri satu kaki adalah...",
+                pilihan: ["Tangan", "Mata", "Lengan dan pinggul"],
+                jawaban: 2
+            },
+            {
+                pertanyaan: "Minuman yang paling baik dikonsumsi setelah berolahraga adalah...",
+                pilihan: ["Minuman bersoda", "Jus buah segar", "Air putih"],
+                jawaban: 2
+            },
+            {
+                pertanyaan: "Jika temanmu jatuh saat lari, tindakan pertama yang harus kamu lakukan adalah...",
+                pilihan: ["Mengejeknya", "Membantu dan bertanya keadaannya", "Melanjutkan lari"],
+                jawaban: 1
+            },
+            {
+                pertanyaan: "Gerakan senam yang dilakukan tanpa berpindah tempat disebut senam...",
+                pilihan: ["Lantai", "Irama", "Kardio"],
+                jawaban: 0 // Senam lantai seringkali statis
+            },
+            {
+                pertanyaan: "Alat yang digunakan untuk memukul bola dalam permainan kasti adalah...",
+                pilihan: ["Raket", "Tongkat pemukul", "Tangan"],
+                jawaban: 1
+            },
+            {
+                pertanyaan: "Berdiri dengan satu kaki selama beberapa detik melatih...",
+                pilihan: ["Kekuatan", "Kelincahan", "Keseimbangan"],
+                jawaban: 2
+            },
+            {
+                pertanyaan: "Permainan 'Gobak Sodor' adalah permainan tradisional yang melatih...",
+                pilihan: ["Ketepatan", "Kerja sama", "Kekuatan lengan"],
+                jawaban: 1
+            },
+            {
+                pertanyaan: "Ketika kita berlari, bagian kaki mana yang pertama menyentuh tanah?",
+                pilihan: ["Jari kaki", "Tumit", "Telapak kaki"],
+                jawaban: 0 // Biasanya bola kaki/jari kaki saat berlari
+            },
+            {
+                pertanyaan: "Apa manfaat utama dari aktivitas fisik atau olahraga secara teratur?",
+                pilihan: ["Cepat lelah", "Tubuh jadi sehat dan kuat", "Sering sakit"],
+                jawaban: 1
+            },
+            {
+                pertanyaan: "Gerakan menggiring bola dalam sepak bola dilakukan dengan...",
+                pilihan: ["Memantulkan bola", "Membawa bola dengan kaki", "Melempar bola"],
+                jawaban: 1
+            },
+            {
+                pertanyaan: "Olahraga renang sangat baik untuk melatih pernapasan dan kekuatan otot...",
+                pilihan: ["Leher", "Seluruh tubuh", "Pergelangan tangan"],
+                jawaban: 1
+            },
+            {
+                pertanyaan: "Jika kamu merasa sakit perut saat pelajaran olahraga, apa yang sebaiknya kamu lakukan?",
+                pilihan: ["Tetap olahraga", "Berpura-pura tidak sakit", "Memberitahu guru PJOK"],
+                jawaban: 2
+            },
+            {
+                pertanyaan: "Permainan 'lompat tali' dapat melatih kelincahan dan juga...",
+                pilihan: ["Kecepatan", "Kekuatan otot perut", "Koordinasi tubuh"],
+                jawaban: 2
+            },
+            {
+                pertanyaan: "Gerakan 'kayang' dalam senam lantai bertujuan untuk melatih kelenturan bagian...",
+                pilihan: ["Lengan", "Perut dan punggung", "Kaki"],
+                jawaban: 1
+            },
+            {
+                pertanyaan: "Sebelum melakukan lompat jauh, langkah awal yang harus dilakukan adalah...",
+                pilihan: ["Melompat tinggi", "Berlari secepatnya", "Mendarat dengan lembut"],
+                jawaban: 1
+            },
+            {
+                pertanyaan: "Mengapa kita perlu istirahat yang cukup setelah beraktivitas fisik?",
+                pilihan: ["Agar tidak mengantuk", "Untuk memulihkan energi tubuh", "Supaya cepat gemuk"],
+                jawaban: 1
+            },
+            {
+                pertanyaan: "Jenis makanan sehat yang memberikan energi utama untuk berolahraga adalah...",
+                pilihan: ["Sayuran dan buah-buahan", "Nasi dan roti (karbohidrat)", "Daging dan telur (protein)"],
+                jawaban: 1
+            }
+        ];
+
+        // --- ELEMEN DOM ---
+        const startOverlay = document.getElementById('start-overlay');
+        const startButton = document.getElementById('start-button');
+        const winnerOverlay = document.getElementById('winner-overlay');
+        const winnerText = document.getElementById('winner-text');
+        const restartButton = document.getElementById('restart-button');
+
+        // Player 1 (Tim Merah)
+        const player1Name = document.getElementById('player1-name');
+        const player1Score = document.getElementById('player1-score');
+        const track1 = document.getElementById('track1');
+        const pawn1 = document.getElementById('pawn1');
+        const question1El = document.getElementById('question1');
+        const options1El = document.getElementById('options1');
+
+        // Player 2 (Tim Biru)
+        const player2Name = document.getElementById('player2-name');
+        const player2Score = document.getElementById('player2-score');
+        const track2 = document.getElementById('track2');
+        const pawn2 = document.getElementById('pawn2');
+        const question2El = document.getElementById('question2');
+        const options2El = document.getElementById('options2');
+
+        // --- STATE PERMAINAN ---
+        const TOTAL_LANGKAH_FINISH = 15; // Jumlah langkah untuk mencapai garis finish
+        const LANGKAH_BENAR = 1;
+
+        let player1 = {
+            id: 'player1',
+            name: 'Tim Merah',
+            pawn: pawn1,
+            track: track1,
+            questionEl: question1El,
+            optionsEl: options1El,
+            position: 0,
+            score: 0,
+            color: 'text-red-600',
+            soalTersisa: [], // Setiap pemain punya bank soal acak sendiri
+            soalSekarang: null
+        };
+
+        let player2 = {
+            id: 'player2',
+            name: 'Tim Biru',
+            pawn: pawn2,
+            track: track2,
+            questionEl: question2El,
+            optionsEl: options2El,
+            position: 0,
+            score: 0,
+            color: 'text-blue-600',
+            soalTersisa: [],
+            soalSekarang: null
+        };
+
+        // --- FUNGSI UTILITY ---
+
+        // Fungsi untuk mengacak array (Fisher-Yates Shuffle)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // --- FUNGSI PERMAINAN UTAMA ---
+
+        function initGame() {
+            // Reset posisi dan skor
+            player1.position = 0;
+            player2.position = 0;
+            player1.score = 0;
+            player2.score = 0;
+
+            // Isi dan acak bank soal untuk setiap pemain
+            player1.soalTersisa = [...BANK_SOAL_PJOK];
+            player2.soalTersisa = [...BANK_SOAL_PJOK];
+            shuffleArray(player1.soalTersisa);
+            shuffleArray(player2.soalTersisa);
+
+            // Sembunyikan overlay dan tampilkan game
+            startOverlay.classList.add('overlay-hidden');
+            winnerOverlay.classList.add('overlay-hidden');
+
+            updatePlayerUI(player1);
+            updatePlayerUI(player2);
+            updatePawnPositions();
+
+            // Mulai giliran dengan pertanyaan pertama
+            loadQuestion(player1);
+            loadQuestion(player2);
+        }
+
+        function updatePlayerUI(player) {
+            player.score = player.position; // Skor = posisi untuk display
+            player.questionEl.textContent = player.soalSekarang ? player.soalSekarang.pertanyaan : "Tekan Mulai Permainan!";
+            
+            // Perbarui tampilan skor
+            const scoreDisplayEl = document.getElementById(`${player.id}-score`);
+            scoreDisplayEl.textContent = `${player.score}/${TOTAL_LANGKAH_FINISH}`;
+
+            updatePawnPositions(); // Pastikan posisi pion diupdate
+        }
+
+        function updatePawnPositions() {
+            // Fungsi ini akan dipanggil untuk kedua pemain
+            [player1, player2].forEach(player => {
+                const trackWidth = player.track.clientWidth;
+                const pawnWidth = player.pawn.clientWidth;
+                // Posisi finish adalah lebar track dikurangi sedikit margin kanan dan setengah lebar pion
+                const finishLinePos = trackWidth - (pawnWidth / 2) - 20; // 20px dari kanan (posisi garis finish)
+                const startPos = 10; // 10px dari kiri
+                
+                const usableTrack = finishLinePos - startPos;
+                
+                if (usableTrack <= 0) { // Safety check
+                    // Jika track belum di-render dengan benar, tunda update
+                    setTimeout(updatePawnPositions, 50); 
+                    return;
+                }
+
+                // Hitung posisi baru
+                const newPos = startPos + (player.position * (usableTrack / TOTAL_LANGKAH_FINISH));
+                player.pawn.style.transform = `translateY(-50%) translateX(${newPos}px)`;
+            });
+        }
+
+        function loadQuestion(player) {
+            // Ambil soal baru
+            if (player.soalTersisa.length === 0) {
+                // Jika soal habis, acak ulang bank soal asli
+                player.soalTersisa = [...BANK_SOAL_PJOK];
+                shuffleArray(player.soalTersisa);
+            }
+            player.soalSekarang = player.soalTersisa.pop();
+
+            // Tampilkan pertanyaan
+            player.questionEl.textContent = player.soalSekarang.pertanyaan;
+
+            // Kosongkan dan buat tombol pilihan jawaban
+            player.optionsEl.innerHTML = '';
+            player.soalSekarang.pilihan.forEach((pilihan, index) => {
+                const button = document.createElement('button');
+                button.textContent = pilihan;
+                button.className = 'option-button';
+                button.onclick = () => handleAnswer(player, index);
+                player.optionsEl.appendChild(button);
+            });
+        }
+
+        function handleAnswer(player, selectedIndex) {
+            const correct = (selectedIndex === player.soalSekarang.jawaban);
+            const buttons = player.optionsEl.querySelectorAll('.option-button');
+
+            // Nonaktifkan semua tombol setelah menjawab
+            buttons.forEach((button, index) => {
+                button.disabled = true;
+                if (index === player.soalSekarang.jawaban) {
+                    button.classList.add('correct'); // Tandai jawaban benar
+                } else if (index === selectedIndex) {
+                    button.classList.add('incorrect'); // Tandai jawaban salah yang dipilih
+                }
+            });
+
+            if (correct) {
+                player.position += LANGKAH_BENAR;
+                if (player.position > TOTAL_LANGKAH_FINISH) {
+                    player.position = TOTAL_LANGKAH_FINISH; // Batasi posisi agar tidak melewati finish
+                }
+            }
+            // Jika salah, posisi tidak berubah
+
+            updatePlayerUI(player); // Update skor dan posisi pion
+
+            // Cek pemenang setelah pion bergerak
+            setTimeout(() => {
+                if (checkWinner(player)) {
+                    return; // Permainan berhenti jika ada pemenang
+                }
+                // Jika belum ada pemenang, muat soal baru
+                loadQuestion(player);
+            }, 1000); // Beri waktu 1 detik untuk melihat hasil jawaban dan animasi pion
+        }
+
+        function checkWinner(player) {
+            if (player.position >= TOTAL_LANGKAH_FINISH) {
+                winnerText.textContent = `${player.name} MENANG! 🎉`;
+                winnerText.className = `text-6xl md:text-7xl font-black mb-12 ${player.color}`;
+                winnerOverlay.classList.remove('overlay-hidden');
+                return true;
+            }
+            return false;
+        }
+
+        // --- EVENT LISTENERS ---
+        startButton.addEventListener('click', initGame);
+        restartButton.addEventListener('click', initGame);
+
+        // Menyesuaikan posisi pion jika ukuran window berubah
+        window.addEventListener('resize', updatePawnPositions);
+
+        // --- MULAI PERMAINAN (Tampilkan start overlay pertama kali) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            startOverlay.classList.remove('overlay-hidden');
+            // Pastikan posisi pion di-reset saat pertama kali dimuat
+            updatePawnPositions(); 
+        });
+    </script>
+
+</body>
+</html>
